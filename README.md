@@ -23,14 +23,26 @@ SCORM isn't a standard anymore. It's a constraint.
 
 ## The vision
 
-OpenLearn is built on three pillars:
+Alternatives exist — xAPI, cmi5, and AI-native tools like Mindsmith.
+But they all share the same fundamental problem: **your content is still 
+locked inside a platform or an opaque format.**
 
-1. **Open format** — Course content stored as clean, readable JSON. Versionable with Git. Editable with any text editor. No zip. No XML cathedral.
+- xAPI and cmi5 are better *tracking protocols* — but they don't solve the authoring problem
+- AI authoring tools generate content faster — but export to SCORM anyway, keeping you dependent
+- When the vendor raises prices or shuts down, your courses go with them
 
-2. **Universal runtime** — A lightweight JS script (<50kb) that handles progress tracking, completion, and scoring. Works with any LMS via a SCORM compatibility layer. No vendor lock-in.
+Next-SCORM is different. It's built on three pillars:
 
-3. **AI-native authoring** — Describe your course in plain language. OpenLearn structures it into learning objectives, sequences, exercises, and assessments — grounded in proven instructional design frameworks (ADDIE, Bloom, Gagné).
+1. **Open format** — Course content stored as clean, readable JSON. Versionable 
+with Git. Editable with any text editor. No zip. No XML cathedral.
 
+2. **Universal runtime** — A lightweight JS script (<50kb) that handles progress 
+tracking, completion, and scoring. Works with any LMS via a SCORM compatibility 
+layer. No vendor lock-in.
+
+3. **AI-native authoring** — Describe your course in plain language. Next-SCORM 
+structures it into learning objectives, sequences, exercises, and assessments — 
+grounded in proven instructional design frameworks (ADDIE, Bloom, Gagné).
 ---
 
 ## Status
