@@ -1,0 +1,81 @@
+{
+  "$schema": "https://next-scorm.dev/schema/v0.1.json",
+  "version": "0.1",
+  "meta": {
+    "id": "unique-course-id",
+    "title": "My First Course",
+    "description": "A short description of what learners will achieve.",
+    "language": "en",
+    "author": "Jane Doe",
+    "created_at": "2026-02-21",
+    "updated_at": "2026-02-21",
+    "tags": ["onboarding", "compliance", "soft-skills"]
+  },
+  "objectives": [
+    {
+      "id": "obj-1",
+      "bloom_level": "understand",
+      "statement": "Learner will be able to explain the core principles of data privacy."
+    },
+    {
+      "id": "obj-2",
+      "bloom_level": "apply",
+      "statement": "Learner will be able to apply data privacy rules in daily work situations."
+    }
+  ],
+  "modules": [
+    {
+      "id": "module-1",
+      "title": "Introduction",
+      "description": "Why this topic matters.",
+      "objectives": ["obj-1"],
+      "sequence": "linear",
+      "blocks": [
+        {
+          "id": "block-1",
+          "type": "content",
+          "format": "markdown",
+          "title": "What is data privacy?",
+          "body": "Data privacy is the right of individuals to control how their personal information is collected and used..."
+        },
+        {
+          "id": "block-2",
+          "type": "quiz",
+          "title": "Quick check",
+          "questions": [
+            {
+              "id": "q-1",
+              "type": "multiple_choice",
+              "stem": "Which of the following is personal data?",
+              "choices": [
+                { "id": "a", "text": "A company name" },
+                { "id": "b", "text": "An email address", "correct": true },
+                { "id": "c", "text": "A product price" }
+              ],
+              "feedback": {
+                "correct": "Correct! An email address directly identifies a person.",
+                "incorrect": "Not quite. Personal data is any information that identifies a specific individual."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "completion": {
+    "strategy": "all_modules",
+    "min_score": 70,
+    "tracking": {
+      "progress": true,
+      "score": true,
+      "time_spent": true,
+      "interactions": true
+    }
+  },
+  "export": {
+    "scorm_1_2": true,
+    "scorm_2004": true,
+    "lti_1_3": true,
+    "standalone_html": true
+  }
+}
