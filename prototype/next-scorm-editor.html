@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Next-SCORM — Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f11; --surface: #18181c; --surface2: #1f1f25; --border: #2a2a32;
+    --accent: #6be3a0; --accent2: #3d7fff; --text: #f0f0f4; --text-muted: #6b6b80;
+    --text-soft: #a0a0b4; --yellow: #ffd166; --purple: #a78bfa; --red: #ff5f5f;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; overflow-y: auto; }
+  .logo { padding: 0 14px 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .logo-mark { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent); }
+  .logo-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lang-toggle { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex-shrink: 0; margin-top: 2px; }
+  .lang-btn { padding: 3px 7px; font-size: 10px; font-weight: 700; font-family: 'DM Sans', sans-serif; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .lang-btn.active { background: var(--accent); color: var(--bg); }
+  .nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0 8px 0 14px; margin-bottom: 4px; margin-top: 10px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px; border-radius: 0; font-size: 13px; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(107,227,160,0.08); color: var(--accent); border-left: 2px solid var(--accent); }
+  .nav-item .icon { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; }
+  .sidebar-bottom { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--border); }
+  .user-card { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .user-card:hover { background: var(--surface2); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--bg); flex-shrink: 0; }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 10px; color: var(--text-muted); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* TOPBAR */
+  .topbar { height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; gap: 10px; flex-shrink: 0; }
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); flex: 1; overflow: hidden; white-space: nowrap; }
+  .breadcrumb span { color: var(--text-soft); }
+  .breadcrumb .current { color: var(--text); font-weight: 500; }
+  .breadcrumb .sep { color: var(--border); }
+  .collab-row { display: flex; align-items: center; gap: -4px; }
+  .collab-av { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--surface); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; margin-left: -6px; cursor: pointer; position: relative; }
+  .collab-av:first-child { margin-left: 0; }
+  .collab-av.av1 { background: linear-gradient(135deg,#6be3a0,#3d7fff); color:#0f0f11; }
+  .collab-av.av2 { background: linear-gradient(135deg,#ffd166,#ff5f5f); color:#0f0f11; }
+  .collab-av.av3 { background: linear-gradient(135deg,#a78bfa,#3d7fff); color:#0f0f11; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); border: 1.5px solid var(--surface); position: absolute; bottom: 0; right: 0; }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; }
+  .btn-sm { display: flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 500; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-sm:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-sm.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .btn-sm.primary:hover { opacity: 0.85; }
+  .save-indicator { font-size: 11px; color: var(--accent); display: flex; align-items: center; gap: 4px; }
+
+  /* EDITOR LAYOUT */
+  .editor-layout { flex: 1; display: flex; overflow: hidden; }
+
+  /* LEFT PANEL - Structure */
+  .panel-structure { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .panel-header { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .panel-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+  .panel-action { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px; transition: color 0.15s; }
+  .panel-action:hover { color: var(--accent); }
+  .structure-list { flex: 1; overflow-y: auto; padding: 8px; }
+  .module-group { margin-bottom: 4px; }
+  .module-header { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 7px; cursor: pointer; transition: background 0.15s; font-size: 12.5px; font-weight: 600; }
+  .module-header:hover { background: var(--surface2); }
+  .module-header.expanded { color: var(--accent); }
+  .module-toggle { font-size: 10px; color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
+  .module-toggle.open { transform: rotate(90deg); }
+  .slide-list { padding-left: 12px; }
+  .slide-item { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; font-size: 12px; color: var(--text-soft); cursor: pointer; transition: all 0.15s; margin-bottom: 1px; }
+  .slide-item:hover { background: var(--surface2); color: var(--text); }
+  .slide-item.active { background: rgba(107,227,160,0.08); color: var(--accent); }
+  .slide-num { font-size: 10px; color: var(--text-muted); width: 16px; flex-shrink: 0; }
+  .slide-type-dot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; }
+  .dot-text { background: var(--accent2); } .dot-quiz { background: var(--yellow); } .dot-media { background: var(--purple); } .dot-scenario { background: var(--red); } .dot-cover { background: var(--accent); }
+  .add-slide-btn { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 8px; border-radius: 7px; background: none; border: 1px dashed var(--border); color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; transition: all 0.15s; margin-top: 4px; }
+  .add-slide-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* CENTER - Canvas */
+  .canvas-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #0d0d10; }
+  .canvas-toolbar { height: 42px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; padding: 0 12px; gap: 2px; flex-shrink: 0; }
+  .tool-btn { width: 32px; height: 32px; border-radius: 6px; border: none; background: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.15s; }
+  .tool-btn:hover { background: var(--surface2); color: var(--text); }
+  .tool-btn.active { background: rgba(107,227,160,0.1); color: var(--accent); }
+  .toolbar-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+  .canvas-wrapper { flex: 1; overflow: auto; display: flex; align-items: flex-start; justify-content: center; padding: 32px; }
+  .slide-canvas { width: 860px; min-height: 480px; background: #1a1a1e; border-radius: 12px; border: 1px solid var(--border); position: relative; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); flex-shrink: 0; }
+  .canvas-nav { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; background: rgba(15,15,17,0.9); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; backdrop-filter: blur(8px); }
+  .canvas-nav-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 4px; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .canvas-nav-btn:hover { color: var(--text); background: var(--surface2); }
+  .canvas-nav-page { font-size: 12px; color: var(--text-soft); font-weight: 500; min-width: 50px; text-align: center; }
+
+  /* Slide content */
+  .slide-cover { width: 100%; height: 480px; background: linear-gradient(135deg, #111116 0%, #1a1230 60%, #0d1420 100%); display: flex; align-items: center; position: relative; overflow: hidden; }
+  .slide-cover::before { content: ''; position: absolute; top: -60px; right: -60px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(107,227,160,0.06) 0%, transparent 70%); border-radius: 50%; }
+  .slide-cover::after { content: ''; position: absolute; bottom: -40px; left: 100px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(61,127,255,0.08) 0%, transparent 70%); border-radius: 50%; }
+  .slide-cover-content { padding: 60px; z-index: 1; position: relative; }
+  .slide-cover-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--accent); font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .slide-cover-tag::before { content: ''; width: 24px; height: 2px; background: var(--accent); border-radius: 1px; }
+  .slide-cover-title { font-family: 'Syne', sans-serif; font-size: 38px; font-weight: 800; line-height: 1.15; margin-bottom: 14px; }
+  .slide-cover-title .highlight { color: var(--accent); }
+  .slide-cover-desc { font-size: 15px; color: var(--text-soft); max-width: 420px; line-height: 1.6; margin-bottom: 28px; }
+  .slide-cover-meta { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-muted); }
+  .slide-cover-meta span { display: flex; align-items: center; gap: 5px; }
+  .editable-block { position: relative; cursor: text; }
+  .editable-block:hover::after { content: '✏️'; position: absolute; top: -8px; right: -8px; font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; pointer-events: none; }
+  .drop-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; margin: 16px 60px; transition: all 0.15s; cursor: pointer; }
+  .drop-zone:hover { border-color: var(--accent); color: var(--accent); background: rgba(107,227,160,0.03); }
+
+  /* RIGHT PANEL - Assets */
+  .panel-assets { width: 256px; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .asset-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--border); flex-shrink: 0; scrollbar-width: none; }
+  .asset-tabs::-webkit-scrollbar { display: none; }
+  .asset-tab { padding: 8px 10px; font-size: 16px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-muted); transition: all 0.15s; flex-shrink: 0; line-height: 1; }
+  .asset-tab:hover { color: var(--text); }
+  .asset-tab.active { border-bottom-color: var(--accent); }
+  .asset-search { padding: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .asset-search input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; }
+  .asset-search input::placeholder { color: var(--text-muted); }
+  .asset-content { flex: 1; overflow-y: auto; padding: 10px; }
+  .asset-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); font-weight: 600; margin: 8px 2px 6px; }
+  .icon-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 12px; }
+  .icon-item { aspect-ratio: 1; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: grab; transition: all 0.15s; }
+  .icon-item:hover { background: rgba(107,227,160,0.08); border-color: rgba(107,227,160,0.3); transform: scale(1.1); }
+  .icon-item:active { cursor: grabbing; opacity: 0.6; }
+  .asset-list { display: flex; flex-direction: column; gap: 4px; }
+  .asset-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 7px; background: var(--surface2); border: 1px solid var(--border); cursor: grab; transition: all 0.15s; font-size: 12px; }
+  .asset-item:hover { border-color: rgba(107,227,160,0.3); background: rgba(107,227,160,0.04); }
+  .asset-item:active { cursor: grabbing; opacity: 0.6; }
+  .asset-thumb { width: 36px; height: 36px; border-radius: 6px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+  .asset-info { flex: 1; min-width: 0; }
+  .asset-name { font-weight: 500; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .asset-meta { font-size: 10.5px; color: var(--text-muted); }
+  .asset-drag-icon { color: var(--text-muted); font-size: 14px; flex-shrink: 0; }
+  .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 16px; text-align: center; margin-top: 8px; cursor: pointer; transition: all 0.15s; }
+  .upload-zone:hover { border-color: var(--accent); background: rgba(107,227,160,0.03); }
+  .upload-zone-text { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+  .upload-zone-types { font-size: 10px; color: var(--text-muted); opacity: 0.7; margin-top: 2px; }
+  .ai-voice-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface2); margin-bottom: 6px; cursor: pointer; transition: all 0.15s; }
+  .ai-voice-card:hover { border-color: rgba(107,227,160,0.3); }
+  .ai-voice-name { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+  .ai-voice-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .voice-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(107,227,160,0.08); color: var(--accent); border: 1px solid rgba(107,227,160,0.15); }
+  .waveform { display: flex; align-items: center; gap: 2px; height: 20px; margin-top: 6px; }
+  .waveform-bar { width: 2px; border-radius: 2px; background: var(--accent); animation: wave 1s ease-in-out infinite; }
+  @keyframes wave { 0%,100%{height:4px}50%{height:14px} }
+  .waveform-bar:nth-child(2){animation-delay:0.1s}.waveform-bar:nth-child(3){animation-delay:0.2s}.waveform-bar:nth-child(4){animation-delay:0.3s}.waveform-bar:nth-child(5){animation-delay:0.15s}.waveform-bar:nth-child(6){animation-delay:0.05s}.waveform-bar:nth-child(7){animation-delay:0.25s}.waveform-bar:nth-child(8){animation-delay:0.1s}
+  .btn-gen-ai { width: 100%; padding: 8px; background: linear-gradient(135deg, rgba(107,227,160,0.1), rgba(61,127,255,0.1)); border: 1px solid rgba(107,227,160,0.25); border-radius: 7px; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+  .btn-gen-ai:hover { background: linear-gradient(135deg, rgba(107,227,160,0.18), rgba(61,127,255,0.18)); }
+  .reusable-block { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); cursor: grab; transition: all 0.15s; margin-bottom: 4px; }
+  .reusable-block:hover { border-color: rgba(167,139,250,0.4); background: rgba(167,139,250,0.04); }
+  .reusable-block:active { cursor: grabbing; opacity: 0.6; }
+  .reusable-icon { width: 30px; height: 30px; border-radius: 6px; background: rgba(167,139,250,0.1); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .reusable-name { font-size: 12px; font-weight: 500; color: var(--text-soft); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div>
+      <div class="logo-mark">Next-SCORM</div>
+      <div class="logo-sub" data-i18n="app_version">Beta v0.9</div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('fr')">FR</button>
+    </div>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_workspace">Workspace</div>
+  <div class="nav-item" onclick="location.href='next-scorm-dashboard.html'">
+    <span class="icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-create.html'">
+    <span class="icon">✨</span><span data-i18n="nav_create">Create</span>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_content">Content</div>
+  <div class="nav-item active">
+    <span class="icon">✏️</span><span data-i18n="nav_editor">Editor</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-json.html'">
+    <span class="icon">{ }</span><span data-i18n="nav_json">JSON Viewer</span>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_deploy">Deploy</div>
+  <div class="nav-item" onclick="location.href='next-scorm-export.html'">
+    <span class="icon">📦</span><span data-i18n="nav_export">Export</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-learner.html'">
+    <span class="icon">🎓</span><span data-i18n="nav_preview">Learner Preview</span>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">MD</div>
+      <div class="user-info">
+        <div class="user-name">Melanie DCM</div>
+        <div class="user-role" data-i18n="role_rf">Resp. Formation</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="breadcrumb">
+      <span>Next-SCORM</span><span class="sep">›</span>
+      <span>Équipe RH</span><span class="sep">›</span>
+      <span>Cybersécurité managers</span><span class="sep">›</span>
+      <span class="current" data-i18n="module_current">Module 2 — Menaces internes</span>
+    </div>
+    <div class="collab-row">
+      <div class="collab-av av1" title="Melanie DCM — Resp. Formation">MD<div class="status-dot"></div></div>
+      <div class="collab-av av2" title="Sophie R. — Concepteur Péda.">SR<div class="status-dot"></div></div>
+      <div class="collab-av av3" title="Tom L. — Relecteur">TL</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="save-indicator">✦ <span data-i18n="saved">Saved</span></div>
+      <button class="btn-sm" data-i18n="btn_history">⏱ History</button>
+      <button class="btn-sm" data-i18n="btn_preview">👁 Preview</button>
+      <button class="btn-sm primary" onclick="location.href='next-scorm-export.html'" data-i18n="btn_export">📦 Export</button>
+    </div>
+  </div>
+
+  <!-- EDITOR LAYOUT -->
+  <div class="editor-layout">
+
+    <!-- LEFT: Structure -->
+    <div class="panel-structure">
+      <div class="panel-header">
+        <span class="panel-title" data-i18n="panel_structure">Structure</span>
+        <button class="panel-action" title="Add module">+</button>
+      </div>
+      <div class="structure-list">
+
+        <div class="module-group">
+          <div class="module-header expanded" onclick="toggleModule(this)">
+            <span class="module-toggle open">▶</span>
+            <span>📘</span>
+            <span data-i18n="module1">Module 1 — Introduction</span>
+          </div>
+          <div class="slide-list">
+            <div class="slide-item"><span class="slide-num">1</span><span class="slide-type-dot dot-cover"></span><span data-i18n="slide_cover">Cover</span></div>
+            <div class="slide-item"><span class="slide-num">2</span><span class="slide-type-dot dot-text"></span><span data-i18n="slide_objectives">Objectives</span></div>
+            <div class="slide-item"><span class="slide-num">3</span><span class="slide-type-dot dot-quiz"></span><span data-i18n="slide_quiz_pre">Pre-quiz</span></div>
+          </div>
+        </div>
+
+        <div class="module-group">
+          <div class="module-header expanded" onclick="toggleModule(this)">
+            <span class="module-toggle open">▶</span>
+            <span>🔐</span>
+            <span data-i18n="module2">Module 2 — Threats</span>
+          </div>
+          <div class="slide-list">
+            <div class="slide-item active"><span class="slide-num">1</span><span class="slide-type-dot dot-cover"></span><span data-i18n="slide_cover_m2">Cover M2</span></div>
+            <div class="slide-item"><span class="slide-num">2</span><span class="slide-type-dot dot-media"></span><span data-i18n="slide_video">Video</span></div>
+            <div class="slide-item"><span class="slide-num">3</span><span class="slide-type-dot dot-text"></span><span data-i18n="slide_content">Content</span></div>
+            <div class="slide-item"><span class="slide-num">4</span><span class="slide-type-dot dot-scenario"></span><span data-i18n="slide_scenario">Scenario</span></div>
+            <div class="slide-item"><span class="slide-num">5</span><span class="slide-type-dot dot-quiz"></span><span data-i18n="slide_knowledge">Knowledge check</span></div>
+          </div>
+          <button class="add-slide-btn">+ <span data-i18n="add_slide">Add slide</span></button>
+        </div>
+
+        <div class="module-group">
+          <div class="module-header" onclick="toggleModule(this)">
+            <span class="module-toggle">▶</span>
+            <span>📋</span>
+            <span data-i18n="module3">Module 3 — Best Practices</span>
+          </div>
+          <div class="slide-list" style="display:none"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CENTER: Canvas -->
+    <div class="canvas-area">
+      <div class="canvas-toolbar">
+        <button class="tool-btn active" title="Select">↖</button>
+        <button class="tool-btn" title="Text">T</button>
+        <button class="tool-btn" title="Shape">⬜</button>
+        <button class="tool-btn" title="Image">🖼</button>
+        <button class="tool-btn" title="Video">🎬</button>
+        <button class="tool-btn" title="Button">🔘</button>
+        <div class="toolbar-sep"></div>
+        <button class="tool-btn" title="Undo">↩</button>
+        <button class="tool-btn" title="Redo">↪</button>
+        <div class="toolbar-sep"></div>
+        <button class="tool-btn" title="Zoom out">−</button>
+        <button class="tool-btn" title="Zoom in">+</button>
+        <div class="toolbar-sep"></div>
+        <button class="tool-btn" title="AI Generate" style="color:var(--accent)">✦</button>
+      </div>
+
+      <div class="canvas-wrapper">
+        <div class="slide-canvas">
+          <div class="slide-cover">
+            <div class="slide-cover-content">
+              <div class="slide-cover-tag editable-block" data-i18n="module_label">Module 2</div>
+              <div class="slide-cover-title editable-block">
+                <span data-i18n="cover_title_1">Internal</span><br>
+                <span class="highlight" data-i18n="cover_title_2">Threats</span>
+              </div>
+              <div class="slide-cover-desc editable-block" data-i18n="cover_desc">Understand the risks posed by internal actors and learn how to identify and respond to suspicious behavior.</div>
+              <div class="slide-cover-meta">
+                <span>⏱ <span data-i18n="duration">25 min</span></span>
+                <span>📊 <span data-i18n="level">Intermediate</span></span>
+                <span>🎯 <span data-i18n="objectives_count">4 objectives</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="drop-zone" data-i18n="drop_zone">🎬 Drop a video, image or block here</div>
+
+          <div class="canvas-nav">
+            <button class="canvas-nav-btn">← <span data-i18n="prev">Prev</span></button>
+            <span class="canvas-nav-page">1 / 5</span>
+            <button class="canvas-nav-btn"><span data-i18n="next">Next</span> →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Assets -->
+    <div class="panel-assets">
+      <div class="asset-tabs">
+        <div class="asset-tab active" onclick="switchTab(0)" title="Icons">🎨</div>
+        <div class="asset-tab" onclick="switchTab(1)" title="Brand Kit">🏷️</div>
+        <div class="asset-tab" onclick="switchTab(2)" title="Videos">🎬</div>
+        <div class="asset-tab" onclick="switchTab(3)" title="Images">🖼️</div>
+        <div class="asset-tab" onclick="switchTab(4)" title="Audio & AI Voice">🎵</div>
+        <div class="asset-tab" onclick="switchTab(5)" title="Reusable blocks">🧩</div>
+        <div class="asset-tab" onclick="switchTab(6)" title="AI Generate">✦</div>
+      </div>
+      <div class="asset-search">
+        <input type="text" data-i18n-placeholder="search_assets" placeholder="Search assets…">
+      </div>
+      <div class="asset-content">
+
+        <!-- Tab 0: Icons -->
+        <div class="tab-panel active" id="tab-0">
+          <div class="asset-section-label" data-i18n="icons_security">Security & Compliance</div>
+          <div class="icon-grid">
+            <div class="icon-item" draggable="true">🔐</div>
+            <div class="icon-item" draggable="true">⚠️</div>
+            <div class="icon-item" draggable="true">✅</div>
+            <div class="icon-item" draggable="true">ℹ️</div>
+            <div class="icon-item" draggable="true">🎯</div>
+            <div class="icon-item" draggable="true">💡</div>
+            <div class="icon-item" draggable="true">👥</div>
+            <div class="icon-item" draggable="true">📄</div>
+            <div class="icon-item" draggable="true">📊</div>
+            <div class="icon-item" draggable="true">📱</div>
+            <div class="icon-item" draggable="true">📧</div>
+            <div class="icon-item" draggable="true">🔑</div>
+          </div>
+          <div class="asset-section-label" data-i18n="icons_nav">Arrows & Connectors</div>
+          <div class="icon-grid">
+            <div class="icon-item" draggable="true">→</div>
+            <div class="icon-item" draggable="true">↑</div>
+            <div class="icon-item" draggable="true">↔</div>
+            <div class="icon-item" draggable="true">↩</div>
+            <div class="icon-item" draggable="true">⟳</div>
+            <div class="icon-item" draggable="true">⇒</div>
+          </div>
+        </div>
+
+        <!-- Tab 1: Brand -->
+        <div class="tab-panel" id="tab-1">
+          <div class="asset-section-label" data-i18n="brand_logos">Logos</div>
+          <div class="asset-list">
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🏢</div>
+              <div class="asset-info"><div class="asset-name">Logo principal</div><div class="asset-meta">SVG · 42kb</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">📐</div>
+              <div class="asset-info"><div class="asset-name">Charte couleurs</div><div class="asset-meta">PDF</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🖼️</div>
+              <div class="asset-info"><div class="asset-name">Banner RH</div><div class="asset-meta">PNG · 1920×400</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Videos -->
+        <div class="tab-panel" id="tab-2">
+          <div class="asset-section-label" data-i18n="project_videos">Project Videos</div>
+          <div class="asset-list">
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🎬</div>
+              <div class="asset-info"><div class="asset-name">Intro cybersécurité</div><div class="asset-meta">2:34 · MP4</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🎬</div>
+              <div class="asset-info"><div class="asset-name">Tuto phishing</div><div class="asset-meta">1:12 · MP4</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+          </div>
+          <div class="upload-zone">
+            <div style="font-size:20px">📤</div>
+            <div class="upload-zone-text" data-i18n="upload_video">Drop video or click to upload</div>
+            <div class="upload-zone-types">MP4 / MOV / WebM · max 500MB</div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Images -->
+        <div class="tab-panel" id="tab-3">
+          <div class="asset-section-label" data-i18n="project_images">Project Images</div>
+          <div class="asset-list">
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🖼️</div>
+              <div class="asset-info"><div class="asset-name">Bureau open space</div><div class="asset-meta">JPG · 1920×1080</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🖼️</div>
+              <div class="asset-info"><div class="asset-name">Réunion client</div><div class="asset-meta">JPG · 1600×900</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+            <div class="asset-item" draggable="true">
+              <div class="asset-thumb">🖼️</div>
+              <div class="asset-info"><div class="asset-name">Laptop sécurisé</div><div class="asset-meta">PNG · 1200×800</div></div>
+              <span class="asset-drag-icon">⠿</span>
+            </div>
+          </div>
+          <div class="upload-zone">
+            <div style="font-size:20px">📤</div>
+            <div class="upload-zone-text" data-i18n="upload_image">Drop image or click to upload</div>
+            <div class="upload-zone-types">PNG / JPG / SVG / WebP</div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Audio -->
+        <div class="tab-panel" id="tab-4">
+          <div class="asset-section-label" data-i18n="audio_record">🎙 Recorder</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">
+            <div class="waveform" style="justify-content:center;margin-bottom:8px;">
+              <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+              <div class="waveform-bar"></div><div class="waveform-bar"></div><div class="waveform-bar"></div>
+              <div class="waveform-bar"></div><div class="waveform-bar"></div>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <button style="flex:1;padding:6px;background:var(--red);border:none;border-radius:6px;color:white;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;font-weight:600;" data-i18n="btn_record">⏺ Record</button>
+              <button style="flex:1;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;" data-i18n="btn_stop">⏹ Stop</button>
+            </div>
+          </div>
+          <div class="asset-section-label" data-i18n="ai_voice">🤖 AI Voice</div>
+          <div class="ai-voice-card">
+            <div class="ai-voice-name">🎙 Camille <span style="font-size:10px;color:var(--text-muted);font-weight:400" data-i18n="voice_fr">FR</span></div>
+            <div class="ai-voice-tags"><span class="voice-tag" data-i18n="tag_professional">Professional</span><span class="voice-tag" data-i18n="tag_warm">Warm</span></div>
+          </div>
+          <div class="ai-voice-card">
+            <div class="ai-voice-name">🎙 Thomas <span style="font-size:10px;color:var(--text-muted);font-weight:400" data-i18n="voice_fr">FR</span></div>
+            <div class="ai-voice-tags"><span class="voice-tag" data-i18n="tag_neutral">Neutral</span><span class="voice-tag" data-i18n="tag_clear">Clear</span></div>
+          </div>
+          <button class="btn-gen-ai" data-i18n="btn_gen_narration">✦ Generate AI Narration</button>
+        </div>
+
+        <!-- Tab 5: Reusable blocks -->
+        <div class="tab-panel" id="tab-5">
+          <div class="asset-section-label" data-i18n="saved_blocks">Saved Blocks</div>
+          <div class="reusable-block" draggable="true">
+            <div class="reusable-icon">🎭</div>
+            <div class="reusable-name" data-i18n="block_scenario">Phishing scenario</div>
+          </div>
+          <div class="reusable-block" draggable="true">
+            <div class="reusable-icon">🃏</div>
+            <div class="reusable-name" data-i18n="block_flashcard">GDPR flashcards</div>
+          </div>
+          <div class="reusable-block" draggable="true">
+            <div class="reusable-icon">🚀</div>
+            <div class="reusable-name" data-i18n="block_intro">Module intro standard</div>
+          </div>
+          <div class="reusable-block" draggable="true">
+            <div class="reusable-icon">❓</div>
+            <div class="reusable-name" data-i18n="block_quiz">Final quiz (10 Qs)</div>
+          </div>
+        </div>
+
+        <!-- Tab 6: AI Generate -->
+        <div class="tab-panel" id="tab-6">
+          <div class="asset-section-label" data-i18n="ai_generators">AI Generators</div>
+          <div class="asset-list">
+            <div class="asset-item" style="cursor:pointer;">
+              <div class="asset-thumb">🎨</div>
+              <div class="asset-info"><div class="asset-name" data-i18n="gen_image">AI Image</div><div class="asset-meta" data-i18n="gen_image_desc">Generate from prompt</div></div>
+            </div>
+            <div class="asset-item" style="cursor:pointer;">
+              <div class="asset-thumb">✨</div>
+              <div class="asset-info"><div class="asset-name" data-i18n="gen_icon">Custom icon</div><div class="asset-meta" data-i18n="gen_icon_desc">Vector, any style</div></div>
+            </div>
+            <div class="asset-item" style="cursor:pointer;">
+              <div class="asset-thumb">📊</div>
+              <div class="asset-info"><div class="asset-name" data-i18n="gen_infographic">Infographic</div><div class="asset-meta" data-i18n="gen_infographic_desc">From your data</div></div>
+            </div>
+          </div>
+          <div class="upload-zone" style="margin-top:12px;">
+            <div style="font-size:20px">📁</div>
+            <div class="upload-zone-text" data-i18n="upload_manual">Upload manually</div>
+            <div class="upload-zone-types" data-i18n="upload_any">Any file type</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const T = {
+  en: {
+    app_version: 'Beta v0.9', nav_workspace: 'Workspace', nav_dashboard: 'Dashboard',
+    nav_create: 'Create', nav_content: 'Content', nav_editor: 'Editor',
+    nav_json: 'JSON Viewer', nav_deploy: 'Deploy', nav_export: 'Export',
+    nav_preview: 'Learner Preview', role_rf: 'Resp. Formation',
+    module_current: 'Module 2 — Internal Threats', saved: 'Saved',
+    btn_history: '⏱ History', btn_preview: '👁 Preview', btn_export: '📦 Export',
+    panel_structure: 'Structure', module1: 'Module 1 — Introduction',
+    module2: 'Module 2 — Threats', module3: 'Module 3 — Best Practices',
+    slide_cover: 'Cover', slide_objectives: 'Objectives', slide_quiz_pre: 'Pre-quiz',
+    slide_cover_m2: 'Cover M2', slide_video: 'Video', slide_content: 'Content',
+    slide_scenario: 'Scenario', slide_knowledge: 'Knowledge check', add_slide: 'Add slide',
+    module_label: 'Module 2', cover_title_1: 'Internal', cover_title_2: 'Threats',
+    cover_desc: 'Understand the risks posed by internal actors and learn how to identify and respond to suspicious behavior.',
+    duration: '25 min', level: 'Intermediate', objectives_count: '4 objectives',
+    drop_zone: '🎬 Drop a video, image or block here', prev: 'Prev', next: 'Next',
+    search_assets: 'Search assets…', icons_security: 'Security & Compliance',
+    icons_nav: 'Arrows & Connectors', brand_logos: 'Logos', project_videos: 'Project Videos',
+    upload_video: 'Drop video or click to upload', project_images: 'Project Images',
+    upload_image: 'Drop image or click to upload', audio_record: '🎙 Recorder',
+    btn_record: '⏺ Record', btn_stop: '⏹ Stop', ai_voice: '🤖 AI Voice',
+    voice_fr: 'FR', tag_professional: 'Professional', tag_warm: 'Warm',
+    tag_neutral: 'Neutral', tag_clear: 'Clear', btn_gen_narration: '✦ Generate AI Narration',
+    saved_blocks: 'Saved Blocks', block_scenario: 'Phishing scenario',
+    block_flashcard: 'GDPR flashcards', block_intro: 'Module intro standard',
+    block_quiz: 'Final quiz (10 Qs)', ai_generators: 'AI Generators',
+    gen_image: 'AI Image', gen_image_desc: 'Generate from prompt',
+    gen_icon: 'Custom icon', gen_icon_desc: 'Vector, any style',
+    gen_infographic: 'Infographic', gen_infographic_desc: 'From your data',
+    upload_manual: 'Upload manually', upload_any: 'Any file type'
+  },
+  fr: {
+    app_version: 'Beta v0.9', nav_workspace: 'Espace de travail', nav_dashboard: 'Tableau de bord',
+    nav_create: 'Créer', nav_content: 'Contenu', nav_editor: 'Éditeur',
+    nav_json: 'Visionneur JSON', nav_deploy: 'Déploiement', nav_export: 'Exporter',
+    nav_preview: 'Aperçu apprenant', role_rf: 'Resp. Formation',
+    module_current: 'Module 2 — Menaces internes', saved: 'Enregistré',
+    btn_history: '⏱ Historique', btn_preview: '👁 Aperçu', btn_export: '📦 Exporter',
+    panel_structure: 'Structure', module1: 'Module 1 — Introduction',
+    module2: 'Module 2 — Menaces', module3: 'Module 3 — Bonnes pratiques',
+    slide_cover: 'Couverture', slide_objectives: 'Objectifs', slide_quiz_pre: 'Pré-quiz',
+    slide_cover_m2: 'Couverture M2', slide_video: 'Vidéo', slide_content: 'Contenu',
+    slide_scenario: 'Scénario', slide_knowledge: 'Vérification', add_slide: 'Ajouter une diapo',
+    module_label: 'Module 2', cover_title_1: 'Menaces', cover_title_2: 'internes',
+    cover_desc: 'Comprendre les risques liés aux acteurs internes et apprendre à identifier et répondre aux comportements suspects.',
+    duration: '25 min', level: 'Intermédiaire', objectives_count: '4 objectifs',
+    drop_zone: '🎬 Glissez une vidéo, image ou bloc ici', prev: 'Préc.', next: 'Suiv.',
+    search_assets: 'Rechercher un asset…', icons_security: 'Sécurité & Conformité',
+    icons_nav: 'Flèches & Connecteurs', brand_logos: 'Logos', project_videos: 'Vidéos du projet',
+    upload_video: 'Déposez une vidéo ou cliquez pour importer', project_images: 'Images du projet',
+    upload_image: 'Déposez une image ou cliquez pour importer', audio_record: '🎙 Enregistreur',
+    btn_record: '⏺ Enregistrer', btn_stop: '⏹ Arrêter', ai_voice: '🤖 Voix IA',
+    voice_fr: 'FR', tag_professional: 'Professionnelle', tag_warm: 'Chaleureuse',
+    tag_neutral: 'Neutre', tag_clear: 'Claire', btn_gen_narration: '✦ Générer la narration IA',
+    saved_blocks: 'Blocs réutilisables', block_scenario: 'Scénario phishing',
+    block_flashcard: 'Flashcards RGPD', block_intro: 'Intro module standard',
+    block_quiz: 'Quiz final (10 questions)', ai_generators: 'Générateurs IA',
+    gen_image: 'Image IA', gen_image_desc: 'Générer depuis un prompt',
+    gen_icon: 'Icône personnalisée', gen_icon_desc: 'Vectorielle, tout style',
+    gen_infographic: 'Infographie', gen_infographic_desc: 'Depuis vos données',
+    upload_manual: 'Importer manuellement', upload_any: 'Tout type de fichier'
+  }
+};
+
+let lang = localStorage.getItem('ns_lang') || 'en';
+function setLang(l) {
+  lang = l; localStorage.setItem('ns_lang', l);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el => { if(T[l][el.dataset.i18n]) el.textContent = T[l][el.dataset.i18n]; });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if(T[l][el.dataset.i18nPlaceholder]) el.placeholder = T[l][el.dataset.i18nPlaceholder]; });
+}
+setLang(lang);
+
+function switchTab(i) {
+  document.querySelectorAll('.asset-tab').forEach((t,idx) => t.classList.toggle('active', idx===i));
+  document.querySelectorAll('.tab-panel').forEach((p,idx) => p.classList.toggle('active', idx===i));
+}
+
+function toggleModule(el) {
+  const list = el.nextElementSibling;
+  const arrow = el.querySelector('.module-toggle');
+  const isOpen = list.style.display !== 'none';
+  list.style.display = isOpen ? 'none' : 'block';
+  arrow.classList.toggle('open', !isOpen);
+  el.classList.toggle('expanded', !isOpen);
+}
+
+// Drag & drop on canvas
+document.querySelectorAll('.icon-item, .asset-item, .reusable-block').forEach(el => {
+  el.addEventListener('dragstart', () => el.style.opacity='0.5');
+  el.addEventListener('dragend', () => el.style.opacity='');
+});
+document.querySelectorAll('.drop-zone, .editable-block').forEach(el => {
+  el.addEventListener('dragover', e => { e.preventDefault(); el.style.borderColor='var(--accent)'; el.style.background='rgba(107,227,160,0.05)'; });
+  el.addEventListener('dragleave', () => { el.style.borderColor=''; el.style.background=''; });
+  el.addEventListener('drop', e => { e.preventDefault(); el.style.borderColor=''; el.style.background=''; });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Next-SCORM — Export</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f11; --surface: #18181c; --surface2: #1f1f25; --border: #2a2a32;
+    --accent: #6be3a0; --accent2: #3d7fff; --text: #f0f0f4; --text-muted: #6b6b80;
+    --text-soft: #a0a0b4; --yellow: #ffd166; --purple: #a78bfa; --red: #ff5f5f;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; overflow-y: auto; }
+  .logo { padding: 0 14px 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .logo-mark { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent); }
+  .logo-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lang-toggle { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .lang-btn { padding: 3px 7px; font-size: 10px; font-weight: 700; font-family: 'DM Sans', sans-serif; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .lang-btn.active { background: var(--accent); color: var(--bg); }
+  .nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0 8px 0 14px; margin-bottom: 4px; margin-top: 10px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px; font-size: 13px; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(107,227,160,0.08); color: var(--accent); border-left: 2px solid var(--accent); }
+  .nav-item .icon { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; }
+  .sidebar-bottom { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--border); }
+  .user-card { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .user-card:hover { background: var(--surface2); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--bg); }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 10px; color: var(--text-muted); }
+
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 10px; flex-shrink: 0; }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; flex: 1; }
+  .course-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--text-soft); }
+  .btn-sm { display: flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 500; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-sm:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-sm.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .btn-sm.primary:hover { opacity: 0.85; }
+
+  .content { flex: 1; overflow-y: auto; display: flex; gap: 0; }
+
+  /* FORMAT SELECTOR */
+  .format-section { width: 340px; flex-shrink: 0; border-right: 1px solid var(--border); padding: 24px; overflow-y: auto; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
+  .format-card { border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; position: relative; overflow: hidden; }
+  .format-card:hover { border-color: rgba(107,227,160,0.3); background: rgba(107,227,160,0.02); }
+  .format-card.selected { border-color: var(--accent); background: rgba(107,227,160,0.04); }
+  .format-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .format-card.scorm12::before { background: var(--accent2); }
+  .format-card.scorm2004::before { background: var(--purple); }
+  .format-card.xapi::before { background: var(--yellow); }
+  .format-card.html::before { background: var(--accent); }
+  .format-card.pdf::before { background: var(--red); }
+  .format-card.cmi5::before { background: var(--text-muted); }
+  .format-card-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .format-icon-big { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .format-icon-big.scorm12 { background: rgba(61,127,255,0.1); }
+  .format-icon-big.scorm2004 { background: rgba(167,139,250,0.1); }
+  .format-icon-big.xapi { background: rgba(255,209,102,0.1); }
+  .format-icon-big.html { background: rgba(107,227,160,0.1); }
+  .format-icon-big.pdf { background: rgba(255,95,95,0.1); }
+  .format-icon-big.cmi5 { background: rgba(107,107,128,0.1); }
+  .format-name-big { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .format-tagline { font-size: 12px; color: var(--text-muted); }
+  .format-desc { font-size: 12px; color: var(--text-soft); line-height: 1.5; margin-bottom: 10px; }
+  .format-compat { display: flex; gap: 4px; flex-wrap: wrap; }
+  .compat-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); }
+  .selected-check { position: absolute; top: 12px; right: 12px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); display: none; align-items: center; justify-content: center; font-size: 11px; color: var(--bg); font-weight: 700; }
+  .format-card.selected .selected-check { display: flex; }
+
+  /* CONFIG PANEL */
+  .config-section { flex: 1; padding: 24px; overflow-y: auto; border-right: 1px solid var(--border); }
+  .config-block { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+  .config-block-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 12px; }
+  .config-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .config-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .config-label { font-size: 13px; color: var(--text-soft); }
+  .config-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .config-control { flex-shrink: 0; margin-left: 12px; }
+  .toggle { width: 36px; height: 20px; border-radius: 10px; border: none; cursor: pointer; position: relative; transition: background 0.2s; }
+  .toggle.on { background: var(--accent); }
+  .toggle.off { background: var(--surface2); border: 1px solid var(--border); }
+  .toggle::after { content: ''; width: 14px; height: 14px; border-radius: 50%; background: white; position: absolute; top: 3px; transition: left 0.2s; }
+  .toggle.on::after { left: 19px; }
+  .toggle.off::after { left: 3px; }
+  .config-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12.5px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; width: 80px; text-align: center; }
+  .config-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; font-size: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; cursor: pointer; }
+  .export-btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), #4fd990); color: var(--bg); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; border: none; border-radius: 10px; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .export-btn-main:hover { opacity: 0.85; }
+  .export-size { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  /* HISTORY */
+  .history-section { width: 280px; flex-shrink: 0; padding: 24px; overflow-y: auto; }
+  .history-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; }
+  .history-item:hover { border-color: rgba(107,227,160,0.3); }
+  .history-format { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .history-info { flex: 1; min-width: 0; }
+  .history-name { font-size: 12.5px; font-weight: 500; margin-bottom: 2px; }
+  .history-meta { font-size: 11px; color: var(--text-muted); }
+  .history-status { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+  .history-status.ok { background: rgba(107,227,160,0.1); color: var(--accent); }
+  .history-status.warn { background: rgba(255,209,102,0.1); color: var(--yellow); }
+
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div>
+      <div class="logo-mark">Next-SCORM</div>
+      <div class="logo-sub">Beta v0.9</div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('fr')">FR</button>
+    </div>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_workspace">Workspace</div>
+  <div class="nav-item" onclick="location.href='next-scorm-dashboard.html'">
+    <span class="icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-create.html'">
+    <span class="icon">✨</span><span data-i18n="nav_create">Create</span>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_content">Content</div>
+  <div class="nav-item" onclick="location.href='next-scorm-editor.html'">
+    <span class="icon">✏️</span><span data-i18n="nav_editor">Editor</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-json.html'">
+    <span class="icon">{ }</span><span data-i18n="nav_json">JSON Viewer</span>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_deploy">Deploy</div>
+  <div class="nav-item active">
+    <span class="icon">📦</span><span data-i18n="nav_export">Export</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-learner.html'">
+    <span class="icon">🎓</span><span data-i18n="nav_preview">Learner Preview</span>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">MD</div>
+      <div class="user-info">
+        <div class="user-name">Melanie DCM</div>
+        <div class="user-role" data-i18n="role_rf">Resp. Formation</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">Export</div>
+    <div class="course-chip">Cybersécurité pour managers · v1.4.2</div>
+    <button class="btn-sm" onclick="location.href='next-scorm-learner.html'" data-i18n="btn_preview">👁 Preview first</button>
+    <button class="btn-sm" onclick="location.href='next-scorm-json.html'" data-i18n="btn_validate">✓ Validate JSON</button>
+  </div>
+
+  <div class="content">
+
+    <!-- FORMAT SELECTION -->
+    <div class="format-section">
+      <div class="section-title" data-i18n="choose_format">Choose export format</div>
+
+      <div class="format-card scorm12 selected" onclick="selectFormat(this)">
+        <div class="selected-check">✓</div>
+        <div class="format-card-header">
+          <div class="format-icon-big scorm12">📦</div>
+          <div>
+            <div class="format-name-big">SCORM 1.2</div>
+            <div class="format-tagline" data-i18n="scorm12_tag">Industry standard · Maximum compatibility</div>
+          </div>
+        </div>
+        <div class="format-desc" data-i18n="scorm12_desc">The most widely supported format. Compatible with virtually all LMS platforms. Tracks completion, score, and time.</div>
+        <div class="format-compat">
+          <span class="compat-tag">Moodle</span><span class="compat-tag">360Learning</span><span class="compat-tag">Docebo</span>
+          <span class="compat-tag">SAP Litmos</span><span class="compat-tag">Cornerstone</span>
+        </div>
+      </div>
+
+      <div class="format-card scorm2004" onclick="selectFormat(this)">
+        <div class="selected-check">✓</div>
+        <div class="format-card-header">
+          <div class="format-icon-big scorm2004">📦</div>
+          <div>
+            <div class="format-name-big">SCORM 2004</div>
+            <div class="format-tagline" data-i18n="scorm2004_tag">Advanced sequencing · Better tracking</div>
+          </div>
+        </div>
+        <div class="format-desc" data-i18n="scorm2004_desc">Enhanced version with detailed sequencing rules and richer data. Best for complex navigation flows.</div>
+        <div class="format-compat">
+          <span class="compat-tag">Moodle</span><span class="compat-tag">Docebo</span><span class="compat-tag">Absorb LMS</span>
+        </div>
+      </div>
+
+      <div class="format-card xapi" onclick="selectFormat(this)">
+        <div class="selected-check">✓</div>
+        <div class="format-card-header">
+          <div class="format-icon-big xapi">🌐</div>
+          <div>
+            <div class="format-name-big">xAPI (Tin Can)</div>
+            <div class="format-tagline" data-i18n="xapi_tag">Rich analytics · Mobile & offline ready</div>
+          </div>
+        </div>
+        <div class="format-desc" data-i18n="xapi_desc">Modern standard with granular tracking. Captures any learning experience, including simulations and mobile.</div>
+        <div class="format-compat">
+          <span class="compat-tag">LRS required</span><span class="compat-tag">SCORM Cloud</span><span class="compat-tag">Watershed</span>
+        </div>
+      </div>
+
+      <div class="format-card html" onclick="selectFormat(this)">
+        <div class="selected-check">✓</div>
+        <div class="format-card-header">
+          <div class="format-icon-big html">🌍</div>
+          <div>
+            <div class="format-name-big">HTML Standalone</div>
+            <div class="format-tagline" data-i18n="html_tag">Self-contained · No LMS needed</div>
+          </div>
+        </div>
+        <div class="format-desc" data-i18n="html_desc">Single HTML file. Share via link, embed via iframe, or host anywhere. Limited tracking via iframe.</div>
+        <div class="format-compat">
+          <span class="compat-tag">Any browser</span><span class="compat-tag">Iframe embed</span><span class="compat-tag">360Learning</span>
+        </div>
+      </div>
+
+      <div class="format-card pdf" onclick="selectFormat(this)">
+        <div class="selected-check">✓</div>
+        <div class="format-card-header">
+          <div class="format-icon-big pdf">📕</div>
+          <div>
+            <div class="format-name-big">PDF Export</div>
+            <div class="format-tagline" data-i18n="pdf_tag">Printable · Offline reference</div>
+          </div>
+        </div>
+        <div class="format-desc" data-i18n="pdf_desc">Generate a printable PDF version of your course. No interactivity, but ideal for compliance documentation.</div>
+        <div class="format-compat">
+          <span class="compat-tag">No tracking</span><span class="compat-tag">Offline</span><span class="compat-tag">Print-ready</span>
+        </div>
+      </div>
+
+      <div class="format-card cmi5" onclick="selectFormat(this)">
+        <div class="selected-check">✓</div>
+        <div class="format-card-header">
+          <div class="format-icon-big cmi5">⚙️</div>
+          <div>
+            <div class="format-name-big">cmi5</div>
+            <div class="format-tagline" data-i18n="cmi5_tag">Next-gen standard · xAPI-based</div>
+          </div>
+        </div>
+        <div class="format-desc" data-i18n="cmi5_desc">Next-generation standard combining SCORM's simplicity with xAPI's power. Growing LMS support.</div>
+        <div class="format-compat">
+          <span class="compat-tag">Beta</span><span class="compat-tag">SCORM Cloud</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="config-section">
+      <div class="section-title" data-i18n="config_title">Configuration — SCORM 1.2</div>
+
+      <div class="config-block">
+        <div class="config-block-title" data-i18n="config_lms">LMS Behaviour</div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_completion">Completion threshold</div><div class="config-desc" data-i18n="cfg_completion_desc">% of slides viewed to mark complete</div></div>
+          <div class="config-control"><input class="config-input" type="number" value="80" min="0" max="100">%</div>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_score">Passing score</div><div class="config-desc" data-i18n="cfg_score_desc">Minimum quiz score to pass</div></div>
+          <div class="config-control"><input class="config-input" type="number" value="70" min="0" max="100">%</div>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_attempt">Max attempts</div></div>
+          <div class="config-control">
+            <select class="config-select">
+              <option data-i18n="opt_unlimited">Unlimited</option>
+              <option>1</option><option>2</option><option>3</option>
+            </select>
+          </div>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_suspend">Suspend & resume</div><div class="config-desc" data-i18n="cfg_suspend_desc">Save learner progress across sessions</div></div>
+          <div class="config-control"><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_nav">Free navigation</div><div class="config-desc" data-i18n="cfg_nav_desc">Allow learners to skip slides</div></div>
+          <div class="config-control"><button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        </div>
+      </div>
+
+      <div class="config-block">
+        <div class="config-block-title" data-i18n="config_package">Package options</div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_compress">Compress assets</div><div class="config-desc" data-i18n="cfg_compress_desc">Optimize file size (recommended)</div></div>
+          <div class="config-control"><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_embed">Embed fonts</div></div>
+          <div class="config-control"><button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label" data-i18n="cfg_json">Preserve course.json</div><div class="config-desc" data-i18n="cfg_json_desc">Core feature — always enabled</div></div>
+          <div class="config-control"><button class="toggle on" style="opacity:0.6;cursor:not-allowed;"></button></div>
+        </div>
+      </div>
+
+      <button class="export-btn-main" onclick="simulateExport(this)">
+        <span>📦</span><span data-i18n="btn_export_main">Export SCORM 1.2 Package</span>
+      </button>
+      <div class="export-size" data-i18n="export_size">Estimated size: ~4.2 MB · ZIP archive</div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="history-section">
+      <div class="section-title" data-i18n="history_title">Export history</div>
+
+      <div class="history-item">
+        <div class="history-format" style="background:rgba(61,127,255,0.1)">📦</div>
+        <div class="history-info">
+          <div class="history-name">SCORM 1.2 · v1.4.1</div>
+          <div class="history-meta" data-i18n="hist1_meta">2 days ago · 3.8 MB</div>
+        </div>
+        <span class="history-status ok" data-i18n="status_ok">OK</span>
+      </div>
+      <div class="history-item">
+        <div class="history-format" style="background:rgba(107,227,160,0.1)">🌍</div>
+        <div class="history-info">
+          <div class="history-name">HTML Standalone · v1.3</div>
+          <div class="history-meta" data-i18n="hist2_meta">5 days ago · 1.2 MB</div>
+        </div>
+        <span class="history-status ok" data-i18n="status_ok">OK</span>
+      </div>
+      <div class="history-item">
+        <div class="history-format" style="background:rgba(255,209,102,0.1)">🌐</div>
+        <div class="history-info">
+          <div class="history-name">xAPI · v1.2</div>
+          <div class="history-meta" data-i18n="hist3_meta">1 week ago · 4.1 MB</div>
+        </div>
+        <span class="history-status warn" data-i18n="status_partial">Partial</span>
+      </div>
+      <div class="history-item">
+        <div class="history-format" style="background:rgba(167,139,250,0.1)">📦</div>
+        <div class="history-info">
+          <div class="history-name">SCORM 2004 · v1.1</div>
+          <div class="history-meta" data-i18n="hist4_meta">2 weeks ago · 4.5 MB</div>
+        </div>
+        <span class="history-status ok" data-i18n="status_ok">OK</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="exportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:360px;text-align:center;">
+    <div style="font-size:40px;margin-bottom:16px;" id="modalIcon">📦</div>
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;" id="modalTitle" data-i18n="modal_building">Building package…</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;" id="modalSub" data-i18n="modal_sub">Compressing assets and generating imsmanifest.xml</div>
+    <div style="height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;">
+      <div id="progressBar" style="height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.3s;"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:8px;" id="progressText">0%</div>
+  </div>
+</div>
+
+<script>
+const T = {
+  en: {
+    nav_workspace: 'Workspace', nav_dashboard: 'Dashboard', nav_create: 'Create',
+    nav_content: 'Content', nav_editor: 'Editor', nav_json: 'JSON Viewer',
+    nav_deploy: 'Deploy', nav_export: 'Export', nav_preview: 'Learner Preview',
+    role_rf: 'Resp. Formation', page_title: 'Export',
+    btn_preview: '👁 Preview first', btn_validate: '✓ Validate JSON',
+    choose_format: 'Choose export format',
+    scorm12_tag: 'Industry standard · Maximum compatibility',
+    scorm12_desc: 'The most widely supported format. Compatible with virtually all LMS platforms. Tracks completion, score, and time.',
+    scorm2004_tag: 'Advanced sequencing · Better tracking',
+    scorm2004_desc: 'Enhanced version with detailed sequencing rules and richer data. Best for complex navigation flows.',
+    xapi_tag: 'Rich analytics · Mobile & offline ready',
+    xapi_desc: 'Modern standard with granular tracking. Captures any learning experience, including simulations and mobile.',
+    html_tag: 'Self-contained · No LMS needed',
+    html_desc: 'Single HTML file. Share via link, embed via iframe, or host anywhere. Limited tracking via iframe.',
+    pdf_tag: 'Printable · Offline reference',
+    pdf_desc: 'Generate a printable PDF version of your course. No interactivity, but ideal for compliance documentation.',
+    cmi5_tag: 'Next-gen standard · xAPI-based',
+    cmi5_desc: 'Next-generation standard combining SCORM\'s simplicity with xAPI\'s power. Growing LMS support.',
+    config_title: 'Configuration — SCORM 1.2', config_lms: 'LMS Behaviour',
+    cfg_completion: 'Completion threshold', cfg_completion_desc: '% of slides viewed to mark complete',
+    cfg_score: 'Passing score', cfg_score_desc: 'Minimum quiz score to pass',
+    cfg_attempt: 'Max attempts', opt_unlimited: 'Unlimited',
+    cfg_suspend: 'Suspend & resume', cfg_suspend_desc: 'Save learner progress across sessions',
+    cfg_nav: 'Free navigation', cfg_nav_desc: 'Allow learners to skip slides',
+    config_package: 'Package options', cfg_compress: 'Compress assets',
+    cfg_compress_desc: 'Optimize file size (recommended)', cfg_embed: 'Embed fonts',
+    cfg_json: 'Preserve course.json', cfg_json_desc: 'Core feature — always enabled',
+    btn_export_main: 'Export SCORM 1.2 Package',
+    export_size: 'Estimated size: ~4.2 MB · ZIP archive',
+    history_title: 'Export history', hist1_meta: '2 days ago · 3.8 MB',
+    hist2_meta: '5 days ago · 1.2 MB', hist3_meta: '1 week ago · 4.1 MB',
+    hist4_meta: '2 weeks ago · 4.5 MB', status_ok: 'OK', status_partial: 'Partial',
+    modal_building: 'Building package…', modal_sub: 'Compressing assets and generating imsmanifest.xml'
+  },
+  fr: {
+    nav_workspace: 'Espace de travail', nav_dashboard: 'Tableau de bord', nav_create: 'Créer',
+    nav_content: 'Contenu', nav_editor: 'Éditeur', nav_json: 'Visionneur JSON',
+    nav_deploy: 'Déploiement', nav_export: 'Exporter', nav_preview: 'Aperçu apprenant',
+    role_rf: 'Resp. Formation', page_title: 'Export',
+    btn_preview: '👁 Prévisualiser', btn_validate: '✓ Valider le JSON',
+    choose_format: 'Choisissez le format d\'export',
+    scorm12_tag: 'Standard industrie · Compatibilité maximale',
+    scorm12_desc: 'Le format le plus compatible. Pris en charge par quasiment tous les LMS. Suit la complétion, le score et le temps.',
+    scorm2004_tag: 'Séquencement avancé · Meilleur suivi',
+    scorm2004_desc: 'Version améliorée avec règles de séquencement détaillées. Idéal pour les parcours de navigation complexes.',
+    xapi_tag: 'Analytique riche · Mobile & hors ligne',
+    xapi_desc: 'Standard moderne avec suivi granulaire. Capture toute expérience d\'apprentissage, y compris simulations et mobile.',
+    html_tag: 'Auto-contenu · Sans LMS',
+    html_desc: 'Fichier HTML unique. Partageable par lien, intégrable en iframe. Suivi limité via iframe.',
+    pdf_tag: 'Imprimable · Référence hors ligne',
+    pdf_desc: 'Génère une version PDF imprimable de votre cours. Sans interactivité, idéal pour la documentation de conformité.',
+    cmi5_tag: 'Standard nouvelle génération · Basé sur xAPI',
+    cmi5_desc: 'Standard de nouvelle génération combinant la simplicité de SCORM et la puissance de xAPI.',
+    config_title: 'Configuration — SCORM 1.2', config_lms: 'Comportement LMS',
+    cfg_completion: 'Seuil de complétion', cfg_completion_desc: '% de diapositives vues pour marquer comme terminé',
+    cfg_score: 'Score de réussite', cfg_score_desc: 'Score minimum au quiz pour valider',
+    cfg_attempt: 'Tentatives max', opt_unlimited: 'Illimité',
+    cfg_suspend: 'Suspension & reprise', cfg_suspend_desc: 'Sauvegarder la progression entre les sessions',
+    cfg_nav: 'Navigation libre', cfg_nav_desc: 'Autoriser les apprenants à sauter des diapositives',
+    config_package: 'Options du package', cfg_compress: 'Compresser les assets',
+    cfg_compress_desc: 'Optimiser la taille du fichier (recommandé)', cfg_embed: 'Intégrer les polices',
+    cfg_json: 'Préserver course.json', cfg_json_desc: 'Fonctionnalité clé — toujours activée',
+    btn_export_main: 'Exporter le package SCORM 1.2',
+    export_size: 'Taille estimée : ~4.2 Mo · Archive ZIP',
+    history_title: 'Historique d\'exports', hist1_meta: 'Il y a 2 jours · 3.8 Mo',
+    hist2_meta: 'Il y a 5 jours · 1.2 Mo', hist3_meta: 'Il y a 1 semaine · 4.1 Mo',
+    hist4_meta: 'Il y a 2 semaines · 4.5 Mo', status_ok: 'OK', status_partial: 'Partiel',
+    modal_building: 'Génération du package…', modal_sub: 'Compression des assets et génération de l\'imsmanifest.xml'
+  }
+};
+
+let lang = localStorage.getItem('ns_lang') || 'en';
+function setLang(l) {
+  lang = l; localStorage.setItem('ns_lang', l);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el => { if(T[l][el.dataset.i18n]) el.textContent = T[l][el.dataset.i18n]; });
+}
+setLang(lang);
+
+function selectFormat(card) {
+  document.querySelectorAll('.format-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+}
+
+function simulateExport(btn) {
+  const modal = document.getElementById('exportModal');
+  modal.style.display = 'flex';
+  let p = 0;
+  const bar = document.getElementById('progressBar');
+  const txt = document.getElementById('progressText');
+  const interval = setInterval(() => {
+    p += Math.random() * 15;
+    if(p >= 100) { p = 100; clearInterval(interval);
+      document.getElementById('modalIcon').textContent = '✅';
+      document.getElementById('modalTitle').textContent = lang === 'fr' ? 'Export réussi !' : 'Export successful!';
+      document.getElementById('modalSub').textContent = lang === 'fr' ? 'Package prêt à télécharger' : 'Package ready to download';
+      setTimeout(() => { modal.style.display = 'none'; }, 1800);
+    }
+    bar.style.width = p + '%';
+    txt.textContent = Math.floor(p) + '%';
+  }, 180);
+}
+document.getElementById('exportModal').addEventListener('click', function(e) {
+  if(e.target === this) this.style.display = 'none';
+});
+</script>
+</body>
+</html>

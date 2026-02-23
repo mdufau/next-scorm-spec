@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Next-SCORM — JSON Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f11; --surface: #18181c; --surface2: #1f1f25; --border: #2a2a32;
+    --accent: #6be3a0; --accent2: #3d7fff; --text: #f0f0f4; --text-muted: #6b6b80;
+    --text-soft: #a0a0b4; --yellow: #ffd166; --purple: #a78bfa; --red: #ff5f5f;
+    --json-key: #a78bfa; --json-str: #6be3a0; --json-num: #ffd166;
+    --json-bool: #ff7b72; --json-null: #6b6b80;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; overflow-y: auto; }
+  .logo { padding: 0 14px 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .logo-mark { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--accent); }
+  .logo-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lang-toggle { display: flex; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .lang-btn { padding: 3px 7px; font-size: 10px; font-weight: 700; font-family: 'DM Sans', sans-serif; background: none; border: none; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .lang-btn.active { background: var(--accent); color: var(--bg); }
+  .nav-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 0 8px 0 14px; margin-bottom: 4px; margin-top: 10px; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px 7px 14px; font-size: 13px; color: var(--text-soft); cursor: pointer; transition: all 0.15s; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(107,227,160,0.08); color: var(--accent); border-left: 2px solid var(--accent); }
+  .nav-item .icon { width: 16px; text-align: center; font-size: 13px; flex-shrink: 0; }
+  .sidebar-bottom { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--border); }
+  .user-card { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; cursor: pointer; }
+  .user-card:hover { background: var(--surface2); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--bg); }
+  .user-name { font-size: 12px; font-weight: 500; }
+  .user-role { font-size: 10px; color: var(--text-muted); }
+
+  /* MAIN */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 10px; flex-shrink: 0; }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; flex: 1; }
+  .topbar-actions { display: flex; gap: 6px; align-items: center; }
+  .btn-sm { display: flex; align-items: center; gap: 5px; font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 500; padding: 6px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-soft); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn-sm:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-sm.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 600; }
+  .btn-sm.primary:hover { opacity: 0.85; }
+  .btn-sm.danger { background: rgba(255,95,95,0.08); color: var(--red); border-color: rgba(255,95,95,0.2); }
+
+  /* LAYOUT */
+  .json-layout { flex: 1; display: flex; overflow: hidden; }
+
+  /* SIDEBAR PANEL */
+  .json-sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .json-sidebar-header { padding: 12px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .json-sidebar-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; }
+  .course-info-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .ci-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .ci-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+  .ci-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(107,227,160,0.08); color: var(--accent); border: 1px solid rgba(107,227,160,0.15); }
+  .integrity-banner { display: flex; align-items: center; gap: 8px; background: rgba(107,227,160,0.06); border: 1px solid rgba(107,227,160,0.2); border-radius: 8px; padding: 9px 12px; font-size: 12px; }
+  .integrity-icon { font-size: 16px; flex-shrink: 0; }
+  .integrity-text { flex: 1; }
+  .integrity-label { font-weight: 600; color: var(--accent); font-size: 12px; }
+  .integrity-desc { color: var(--text-muted); font-size: 11px; }
+  .tree-nav { flex: 1; overflow-y: auto; padding: 8px; }
+  .tree-node { padding: 1px 0; }
+  .tree-row { display: flex; align-items: center; gap: 4px; padding: 4px 6px; border-radius: 5px; cursor: pointer; transition: background 0.1s; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .tree-row:hover { background: var(--surface2); }
+  .tree-row.active { background: rgba(107,227,160,0.08); }
+  .tree-toggle { width: 14px; text-align: center; font-size: 9px; color: var(--text-muted); flex-shrink: 0; }
+  .tree-key { color: var(--json-key); }
+  .tree-value { color: var(--json-str); margin-left: 4px; }
+  .tree-value.num { color: var(--json-num); }
+  .tree-value.bool { color: var(--json-bool); }
+  .tree-count { color: var(--text-muted); font-size: 10px; margin-left: 4px; }
+  .tree-children { padding-left: 16px; }
+  .search-bar { padding: 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .search-bar input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; }
+  .search-bar input::placeholder { color: var(--text-muted); }
+
+  /* JSON CODE AREA */
+  .json-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .json-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; padding: 0 16px; gap: 2px; align-items: flex-end; }
+  .json-tab { padding: 8px 14px; font-size: 12.5px; font-weight: 500; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
+  .json-tab:hover { color: var(--text); }
+  .json-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .json-code-wrap { flex: 1; overflow: auto; position: relative; }
+  .json-code { padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; min-height: 100%; white-space: pre; }
+  .line-nums { position: absolute; left: 0; top: 0; padding: 20px 10px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; color: var(--text-muted); background: var(--surface); border-right: 1px solid var(--border); text-align: right; width: 44px; user-select: none; opacity: 0.5; }
+  .json-code { padding-left: 60px; }
+  .j-key { color: var(--json-key); }
+  .j-str { color: var(--json-str); }
+  .j-num { color: var(--json-num); }
+  .j-bool { color: var(--json-bool); }
+  .j-null { color: var(--json-null); }
+  .j-brace { color: var(--text-muted); }
+  .j-highlight { background: rgba(107,227,160,0.06); border-left: 2px solid var(--accent); margin-left: -2px; padding-left: 2px; display: block; }
+  .diff-added { background: rgba(107,227,160,0.06); }
+  .diff-removed { background: rgba(255,95,95,0.06); }
+
+  /* STATUS BAR */
+  .status-bar { height: 26px; border-top: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; padding: 0 16px; gap: 16px; flex-shrink: 0; font-size: 11px; color: var(--text-muted); }
+  .status-item { display: flex; align-items: center; gap: 4px; }
+  .status-dot-green { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  /* VALIDATION PANEL */
+  .validation-panel { width: 240px; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .val-header { padding: 12px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .val-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+  .val-content { flex: 1; overflow-y: auto; padding: 10px; }
+  .val-group { margin-bottom: 14px; }
+  .val-group-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+  .val-item { display: flex; align-items: flex-start; gap: 6px; padding: 6px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); margin-bottom: 4px; font-size: 11.5px; }
+  .val-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .val-text { flex: 1; color: var(--text-soft); line-height: 1.4; }
+  .val-ok { border-color: rgba(107,227,160,0.2); background: rgba(107,227,160,0.04); }
+  .val-warn { border-color: rgba(255,209,102,0.2); background: rgba(255,209,102,0.04); }
+  .val-err { border-color: rgba(255,95,95,0.2); background: rgba(255,95,95,0.04); }
+  .export-format-list { display: flex; flex-direction: column; gap: 4px; }
+  .format-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); font-size: 11.5px; cursor: pointer; transition: all 0.15s; }
+  .format-item:hover { border-color: rgba(107,227,160,0.3); }
+  .format-icon { font-size: 14px; }
+  .format-name { flex: 1; font-weight: 500; color: var(--text-soft); }
+  .format-check { color: var(--accent); font-size: 12px; }
+
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR NAV -->
+<aside class="sidebar">
+  <div class="logo">
+    <div>
+      <div class="logo-mark">Next-SCORM</div>
+      <div class="logo-sub">Beta v0.9</div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('fr')">FR</button>
+    </div>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_workspace">Workspace</div>
+  <div class="nav-item" onclick="location.href='next-scorm-dashboard.html'">
+    <span class="icon">📊</span><span data-i18n="nav_dashboard">Dashboard</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-create.html'">
+    <span class="icon">✨</span><span data-i18n="nav_create">Create</span>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_content">Content</div>
+  <div class="nav-item" onclick="location.href='next-scorm-editor.html'">
+    <span class="icon">✏️</span><span data-i18n="nav_editor">Editor</span>
+  </div>
+  <div class="nav-item active">
+    <span class="icon">{ }</span><span data-i18n="nav_json">JSON Viewer</span>
+  </div>
+
+  <div class="nav-label" data-i18n="nav_deploy">Deploy</div>
+  <div class="nav-item" onclick="location.href='next-scorm-export.html'">
+    <span class="icon">📦</span><span data-i18n="nav_export">Export</span>
+  </div>
+  <div class="nav-item" onclick="location.href='next-scorm-learner.html'">
+    <span class="icon">🎓</span><span data-i18n="nav_preview">Learner Preview</span>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">MD</div>
+      <div class="user-info">
+        <div class="user-name">Melanie DCM</div>
+        <div class="user-role" data-i18n="role_rf">Resp. Formation</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" data-i18n="page_title">course.json</div>
+    <div class="topbar-actions">
+      <button class="btn-sm" data-i18n="btn_collapse">⊟ Collapse all</button>
+      <button class="btn-sm" data-i18n="btn_expand">⊞ Expand all</button>
+      <button class="btn-sm" data-i18n="btn_copy">⧉ Copy</button>
+      <button class="btn-sm" data-i18n="btn_format">⟳ Format</button>
+      <button class="btn-sm danger" data-i18n="btn_reset">↺ Reset</button>
+      <button class="btn-sm primary" onclick="location.href='next-scorm-export.html'" data-i18n="btn_export">📦 Export</button>
+    </div>
+  </div>
+
+  <div class="json-layout">
+
+    <!-- LEFT: Tree + info -->
+    <div class="json-sidebar">
+      <div class="json-sidebar-header">
+        <div class="json-sidebar-title" data-i18n="sidebar_info">Course Info</div>
+        <div class="course-info-card">
+          <div class="ci-name">Cybersécurité pour managers</div>
+          <div class="ci-meta">
+            <span class="ci-tag">SCORM 1.2</span>
+            <span class="ci-tag">3 modules</span>
+            <span class="ci-tag">v1.4.2</span>
+          </div>
+        </div>
+        <div class="integrity-banner">
+          <div class="integrity-icon">🔒</div>
+          <div class="integrity-text">
+            <div class="integrity-label" data-i18n="integrity_label">Structure preserved</div>
+            <div class="integrity-desc" data-i18n="integrity_desc">Original course.json intact</div>
+          </div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" data-i18n-placeholder="search_json" placeholder="Search in JSON…">
+      </div>
+      <div class="tree-nav">
+        <div class="tree-node">
+          <div class="tree-row active" onclick="focusNode('root')">
+            <span class="tree-toggle">▼</span>
+            <span class="tree-key">{ }</span>
+            <span class="tree-key">course</span>
+            <span class="tree-count">12 keys</span>
+          </div>
+          <div class="tree-children">
+            <div class="tree-node">
+              <div class="tree-row" onclick="focusNode('meta')">
+                <span class="tree-toggle">▼</span>
+                <span class="tree-key">"metadata"</span>
+                <span class="tree-count">8 keys</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-row" style="padding-left:8px;">
+                  <span class="tree-toggle"></span>
+                  <span class="tree-key">"id"</span>
+                  <span class="tree-value">"cyb-mgr-2024"</span>
+                </div>
+                <div class="tree-row" style="padding-left:8px;">
+                  <span class="tree-toggle"></span>
+                  <span class="tree-key">"version"</span>
+                  <span class="tree-value num">"1.4.2"</span>
+                </div>
+                <div class="tree-row" style="padding-left:8px;">
+                  <span class="tree-toggle"></span>
+                  <span class="tree-key">"lang"</span>
+                  <span class="tree-value">"fr-FR"</span>
+                </div>
+              </div>
+            </div>
+            <div class="tree-node">
+              <div class="tree-row" onclick="focusNode('modules')">
+                <span class="tree-toggle">▼</span>
+                <span class="tree-key">"modules"</span>
+                <span class="tree-count">[3]</span>
+              </div>
+              <div class="tree-children">
+                <div class="tree-row" onclick="focusNode('m0')">
+                  <span class="tree-toggle">▶</span>
+                  <span class="tree-key">[0]</span>
+                  <span class="tree-value">Introduction</span>
+                </div>
+                <div class="tree-row" onclick="focusNode('m1')">
+                  <span class="tree-toggle">▶</span>
+                  <span class="tree-key">[1]</span>
+                  <span class="tree-value">Menaces internes</span>
+                </div>
+                <div class="tree-row" onclick="focusNode('m2')">
+                  <span class="tree-toggle">▶</span>
+                  <span class="tree-key">[2]</span>
+                  <span class="tree-value">Bonnes pratiques</span>
+                </div>
+              </div>
+            </div>
+            <div class="tree-row" onclick="focusNode('scorm')">
+              <span class="tree-toggle">▶</span>
+              <span class="tree-key">"scorm_config"</span>
+              <span class="tree-count">6 keys</span>
+            </div>
+            <div class="tree-row">
+              <span class="tree-toggle"></span>
+              <span class="tree-key">"completion_threshold"</span>
+              <span class="tree-value num">80</span>
+            </div>
+            <div class="tree-row">
+              <span class="tree-toggle"></span>
+              <span class="tree-key">"passing_score"</span>
+              <span class="tree-value num">70</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: Code -->
+    <div class="json-main">
+      <div class="json-tabs">
+        <div class="json-tab active" data-i18n="tab_raw">Raw JSON</div>
+        <div class="json-tab" data-i18n="tab_diff">Diff view</div>
+        <div class="json-tab" data-i18n="tab_schema">Schema</div>
+        <div class="json-tab" data-i18n="tab_ai">✦ AI suggest</div>
+      </div>
+      <div class="json-code-wrap">
+        <div class="line-nums" id="lineNums"></div>
+        <div class="json-code" id="jsonCode"></div>
+      </div>
+      <div class="status-bar">
+        <div class="status-item"><div class="status-dot-green"></div><span data-i18n="status_valid">Valid JSON</span></div>
+        <div class="status-item"><span data-i18n="status_lines">247 lines</span></div>
+        <div class="status-item"><span data-i18n="status_size">14.2 KB</span></div>
+        <div class="status-item"><span data-i18n="status_encoding">UTF-8</span></div>
+        <div style="margin-left:auto;" class="status-item"><span data-i18n="status_modified">Last modified: just now</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Validation -->
+    <div class="validation-panel">
+      <div class="val-header">
+        <div class="val-title" data-i18n="val_title">Validation</div>
+      </div>
+      <div class="val-content">
+        <div class="val-group">
+          <div class="val-group-label" data-i18n="val_structure">Structure</div>
+          <div class="val-item val-ok"><span class="val-icon">✅</span><div class="val-text" data-i18n="val_ok1">Valid JSON syntax</div></div>
+          <div class="val-item val-ok"><span class="val-icon">✅</span><div class="val-text" data-i18n="val_ok2">All required fields present</div></div>
+          <div class="val-item val-ok"><span class="val-icon">✅</span><div class="val-text" data-i18n="val_ok3">Original structure preserved</div></div>
+          <div class="val-item val-warn"><span class="val-icon">⚠️</span><div class="val-text" data-i18n="val_warn1">Module 3 has no quiz defined</div></div>
+        </div>
+        <div class="val-group">
+          <div class="val-group-label" data-i18n="val_scorm">SCORM Compliance</div>
+          <div class="val-item val-ok"><span class="val-icon">✅</span><div class="val-text" data-i18n="val_ok4">SCORM 1.2 compatible</div></div>
+          <div class="val-item val-ok"><span class="val-icon">✅</span><div class="val-text" data-i18n="val_ok5">Mastery score defined</div></div>
+          <div class="val-item val-warn"><span class="val-icon">⚠️</span><div class="val-text" data-i18n="val_warn2">Prerequisites not set for M2</div></div>
+        </div>
+        <div class="val-group">
+          <div class="val-group-label" data-i18n="val_export">Export readiness</div>
+          <div class="export-format-list">
+            <div class="format-item"><span class="format-icon">📦</span><span class="format-name">SCORM 1.2</span><span class="format-check">✓</span></div>
+            <div class="format-item"><span class="format-icon">📦</span><span class="format-name">SCORM 2004</span><span class="format-check">✓</span></div>
+            <div class="format-item"><span class="format-icon">🌐</span><span class="format-name">xAPI</span><span class="format-check">✓</span></div>
+            <div class="format-item"><span class="format-icon">📄</span><span class="format-name">HTML</span><span class="format-check">✓</span></div>
+            <div class="format-item"><span class="format-icon">📕</span><span class="format-name">cmi5</span><span class="format-check" style="color:var(--yellow)">~</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const T = {
+  en: {
+    nav_workspace: 'Workspace', nav_dashboard: 'Dashboard', nav_create: 'Create',
+    nav_content: 'Content', nav_editor: 'Editor', nav_json: 'JSON Viewer',
+    nav_deploy: 'Deploy', nav_export: 'Export', nav_preview: 'Learner Preview',
+    role_rf: 'Resp. Formation', page_title: 'course.json',
+    btn_collapse: '⊟ Collapse all', btn_expand: '⊞ Expand all',
+    btn_copy: '⧉ Copy', btn_format: '⟳ Format', btn_reset: '↺ Reset',
+    btn_export: '📦 Export', sidebar_info: 'Course Info',
+    integrity_label: 'Structure preserved', integrity_desc: 'Original course.json intact',
+    search_json: 'Search in JSON…', tab_raw: 'Raw JSON', tab_diff: 'Diff view',
+    tab_schema: 'Schema', tab_ai: '✦ AI suggest',
+    status_valid: 'Valid JSON', status_lines: '247 lines',
+    status_size: '14.2 KB', status_encoding: 'UTF-8', status_modified: 'Last modified: just now',
+    val_title: 'Validation', val_structure: 'Structure',
+    val_ok1: 'Valid JSON syntax', val_ok2: 'All required fields present',
+    val_ok3: 'Original structure preserved', val_warn1: 'Module 3 has no quiz defined',
+    val_scorm: 'SCORM Compliance', val_ok4: 'SCORM 1.2 compatible',
+    val_ok5: 'Mastery score defined', val_warn2: 'Prerequisites not set for M2',
+    val_export: 'Export readiness'
+  },
+  fr: {
+    nav_workspace: 'Espace de travail', nav_dashboard: 'Tableau de bord', nav_create: 'Créer',
+    nav_content: 'Contenu', nav_editor: 'Éditeur', nav_json: 'Visionneur JSON',
+    nav_deploy: 'Déploiement', nav_export: 'Exporter', nav_preview: 'Aperçu apprenant',
+    role_rf: 'Resp. Formation', page_title: 'course.json',
+    btn_collapse: '⊟ Tout réduire', btn_expand: '⊞ Tout développer',
+    btn_copy: '⧉ Copier', btn_format: '⟳ Formater', btn_reset: '↺ Réinitialiser',
+    btn_export: '📦 Exporter', sidebar_info: 'Infos du cours',
+    integrity_label: 'Structure préservée', integrity_desc: 'course.json original intact',
+    search_json: 'Chercher dans le JSON…', tab_raw: 'JSON brut', tab_diff: 'Vue diff',
+    tab_schema: 'Schéma', tab_ai: '✦ Suggestion IA',
+    status_valid: 'JSON valide', status_lines: '247 lignes',
+    status_size: '14.2 Ko', status_encoding: 'UTF-8', status_modified: 'Dernière modif. : à l\'instant',
+    val_title: 'Validation', val_structure: 'Structure',
+    val_ok1: 'Syntaxe JSON valide', val_ok2: 'Tous les champs requis présents',
+    val_ok3: 'Structure originale préservée', val_warn1: 'Module 3 : aucun quiz défini',
+    val_scorm: 'Conformité SCORM', val_ok4: 'Compatible SCORM 1.2',
+    val_ok5: 'Score de maîtrise défini', val_warn2: 'Prérequis non définis pour M2',
+    val_export: 'Prêt à l\'export'
+  }
+};
+
+let lang = localStorage.getItem('ns_lang') || 'en';
+function setLang(l) {
+  lang = l; localStorage.setItem('ns_lang', l);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent === l.toUpperCase()));
+  document.querySelectorAll('[data-i18n]').forEach(el => { if(T[l][el.dataset.i18n]) el.textContent = T[l][el.dataset.i18n]; });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if(T[l][el.dataset.i18nPlaceholder]) el.placeholder = T[l][el.dataset.i18nPlaceholder]; });
+}
+setLang(lang);
+
+function focusNode(id) {
+  document.querySelectorAll('.tree-row').forEach(r => r.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+// Generate JSON code with syntax highlighting
+const jsonData = {
+  "metadata": {
+    "id": "cyb-mgr-2024",
+    "title": "Cybersécurité pour managers",
+    "version": "1.4.2",
+    "lang": "fr-FR",
+    "author": "Melanie DCM",
+    "organization": "Équipe RH",
+    "created_at": "2024-01-15T09:00:00Z",
+    "updated_at": "2024-03-12T14:32:00Z"
+  },
+  "scorm_config": {
+    "standard": "SCORM 1.2",
+    "mastery_score": 70,
+    "completion_threshold": 80,
+    "time_limit_action": "continue",
+    "data_from_lms": true,
+    "student_pref": true
+  },
+  "completion_threshold": 80,
+  "passing_score": 70,
+  "modules": [
+    {
+      "id": "mod-001",
+      "title": "Introduction à la cybersécurité",
+      "duration_minutes": 15,
+      "slides": [
+        {"id": "s001", "type": "cover", "title": "Bienvenue"},
+        {"id": "s002", "type": "text", "title": "Objectifs pédagogiques"},
+        {"id": "s003", "type": "quiz", "title": "Pré-évaluation", "questions": 5}
+      ]
+    },
+    {
+      "id": "mod-002",
+      "title": "Menaces internes",
+      "duration_minutes": 25,
+      "slides": [
+        {"id": "s010", "type": "cover", "title": "Couverture Module 2"},
+        {"id": "s011", "type": "video", "src": "assets/videos/intro-cyber.mp4"},
+        {"id": "s012", "type": "text", "title": "Les vecteurs d'attaque"},
+        {"id": "s013", "type": "scenario", "title": "Scénario phishing"},
+        {"id": "s014", "type": "quiz", "title": "Vérification", "questions": 10}
+      ]
+    },
+    {
+      "id": "mod-003",
+      "title": "Bonnes pratiques",
+      "duration_minutes": 20,
+      "slides": []
+    }
+  ]
+};
+
+function colorize(json) {
+  return json
+    .replace(/("(?:[^"\\]|\\.)*")\s*:/g, '<span class="j-key">$1</span>:')
+    .replace(/:\s*("(?:[^"\\]|\\.)*")/g, ': <span class="j-str">$1</span>')
+    .replace(/:\s*(\d+\.?\d*)/g, ': <span class="j-num">$1</span>')
+    .replace(/:\s*(true|false)/g, ': <span class="j-bool">$1</span>')
+    .replace(/:\s*(null)/g, ': <span class="j-null">$1</span>')
+    .replace(/([{}[\]])/g, '<span class="j-brace">$1</span>');
+}
+
+const jsonStr = JSON.stringify(jsonData, null, 2);
+const lines = jsonStr.split('\n');
+document.getElementById('jsonCode').innerHTML = lines.map((l,i) =>
+  `<span${i===0||i===1?'':''} class="code-line">${colorize(l)}</span>`
+).join('\n');
+document.getElementById('lineNums').innerHTML = lines.map((_,i) => i+1).join('\n');
+</script>
+</body>
+</html>

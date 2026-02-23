@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Next-SCORM</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #1f1f25;
+    --border: #2a2a32;
+    --accent: #6be3a0;
+    --accent2: #3d7fff;
+    --text: #f0f0f4;
+    --text-muted: #6b6b80;
+    --text-soft: #a0a0b4;
+    --purple: #a78bfa;
+    --yellow: #ffd166;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Fond animé */
+  .bg-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.12;
+    animation: drift 8s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .bg-glow.g1 { width: 500px; height: 500px; background: var(--accent); top: -100px; left: -100px; animation-delay: 0s; }
+  .bg-glow.g2 { width: 400px; height: 400px; background: var(--accent2); bottom: -80px; right: -80px; animation-delay: 3s; }
+  .bg-glow.g3 { width: 300px; height: 300px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: 1.5s; }
+
+  @keyframes drift {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-20px) scale(1.05); }
+  }
+  .bg-glow.g3 {
+    animation: drift3 8s ease-in-out infinite;
+    animation-delay: 1.5s;
+  }
+  @keyframes drift3 {
+    0%, 100% { transform: translate(-50%,-50%) scale(1); }
+    50% { transform: translate(-50%,-55%) scale(1.08); }
+  }
+
+  /* Grille de points de fond */
+  .bg-dots {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, #2a2a32 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* CARD CENTRALE */
+  .splash-card {
+    position: relative;
+    z-index: 10;
+    background: rgba(24,24,28,0.85);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 52px 56px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+    animation: fadeUp 0.6s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* LOGO */
+  .splash-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .splash-logo-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(107,227,160,0.2), rgba(61,127,255,0.2));
+    border: 1px solid rgba(107,227,160,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .splash-logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .splash-tagline {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 36px;
+  }
+
+  /* HEADLINE */
+  .splash-headline {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .splash-headline .hl { color: var(--accent); }
+
+  .splash-sub {
+    font-size: 14px;
+    color: var(--text-soft);
+    line-height: 1.65;
+    margin-bottom: 40px;
+  }
+
+  /* CHOIX LANGUE */
+  .lang-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    font-weight: 600;
+  }
+
+  .lang-choices {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .lang-choice {
+    flex: 1;
+    max-width: 160px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    border: 2px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .lang-choice:hover { border-color: var(--accent); background: rgba(107,227,160,0.05); transform: translateY(-2px); }
+  .lang-choice.selected { border-color: var(--accent); background: rgba(107,227,160,0.08); }
+
+  .lang-flag { font-size: 28px; line-height: 1; }
+  .lang-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .lang-native { font-size: 11px; color: var(--text-muted); }
+
+  .lang-check {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--accent); display: none;
+    align-items: center; justify-content: center;
+    font-size: 10px; color: var(--bg); font-weight: 700;
+  }
+  .lang-choice.selected .lang-check { display: flex; }
+
+  /* CTA */
+  .splash-cta {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .splash-cta:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(107,227,160,0.25); }
+
+  /* FEATURES PILLS */
+  .features-pills {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+  }
+  .feature-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+
+  /* VERSION TAG */
+  .version-tag {
+    margin-top: 20px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .version-tag span { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="bg-dots"></div>
+<div class="bg-glow g1"></div>
+<div class="bg-glow g2"></div>
+<div class="bg-glow g3"></div>
+
+<div class="splash-card">
+
+  <div class="splash-logo">
+    <div class="splash-logo-icon">✦</div>
+    <div class="splash-logo-text">Next-SCORM</div>
+  </div>
+  <div class="splash-tagline">Authoring Platform</div>
+
+  <h1 class="splash-headline">
+    The <span class="hl">smarter</span> way<br>to build e-learning
+  </h1>
+  <p class="splash-sub">
+    AI-powered course creation. Portable JSON format.<br>Export to any LMS. Built for teams.
+  </p>
+
+  <div class="features-pills">
+    <div class="feature-pill">✨ AI Generation</div>
+    <div class="feature-pill">🛤️ Learning Paths</div>
+    <div class="feature-pill">👥 Team Collaboration</div>
+    <div class="feature-pill">🚀 Multi-LMS Export</div>
+  </div>
+
+  <div class="lang-label" id="lang-label">Choose your language</div>
+
+  <div class="lang-choices">
+    <div class="lang-choice selected" id="choice-en" onclick="selectLang('en')">
+      <div class="lang-flag">🇬🇧</div>
+      <div class="lang-name">English</div>
+      <div class="lang-native">English</div>
+      <div class="lang-check">✓</div>
+    </div>
+    <div class="lang-choice" id="choice-fr" onclick="selectLang('fr')">
+      <div class="lang-flag">🇫🇷</div>
+      <div class="lang-name">French</div>
+      <div class="lang-native">Français</div>
+      <div class="lang-check">✓</div>
+    </div>
+  </div>
+
+  <button class="splash-cta" id="cta-btn" onclick="enter()">
+    <span id="cta-text">Enter the platform →</span>
+  </button>
+
+  <div class="version-tag">Preview <span>v0.1</span> — Beta</div>
+
+</div>
+
+<script>
+  let selectedLang = 'en';
+
+  // Par défaut : anglais
+  localStorage.setItem('ns_lang', 'en');
+
+  function selectLang(lang) {
+    selectedLang = lang;
+    localStorage.setItem('ns_lang', lang);
+
+    document.getElementById('choice-en').classList.toggle('selected', lang === 'en');
+    document.getElementById('choice-fr').classList.toggle('selected', lang === 'fr');
+
+    // Adapter le texte du splash selon la langue choisie
+    if (lang === 'fr') {
+      document.getElementById('lang-label').textContent = 'Choisissez votre langue';
+      document.getElementById('cta-text').textContent = 'Accéder à la plateforme →';
+      document.querySelector('.lang-choice#choice-fr .lang-name').textContent = 'Français';
+      document.querySelector('.lang-choice#choice-en .lang-name').textContent = 'Anglais';
+    } else {
+      document.getElementById('lang-label').textContent = 'Choose your language';
+      document.getElementById('cta-text').textContent = 'Enter the platform →';
+      document.querySelector('.lang-choice#choice-fr .lang-name').textContent = 'French';
+      document.querySelector('.lang-choice#choice-en .lang-name').textContent = 'English';
+    }
+  }
+
+  function enter() {
+    // Animation de sortie
+    document.querySelector('.splash-card').style.animation = 'fadeUp 0.3s ease reverse forwards';
+    setTimeout(() => {
+      window.location.href = 'next-scorm-dashboard.html';
+    }, 280);
+  }
+
+  // Keyboard: Enter pour valider
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') enter(); });
+</script>
+</body>
+</html>
